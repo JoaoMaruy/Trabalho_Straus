@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <title>CineReview</title>
+</head>
+<body>
+    <header>
+        <h1>CineReview</h1>
+        <div id="user-info">
+            <span id="nomeUser"></span>
+            <a href="avaliacao.html" class="btn">+ Avaliar</a>
+        </div>
+    </header>
+
+    <div id="feed" class="container"></div>
+
+    <script>
+        fetch('/dados-usuario').then(r => r.json()).then(d => {
+            if (!d.nome) window.location.href = '/login.html';
+            document.getElementById('nomeUser').innerText = "Olá, " + d.nome;
+        });
+
+        fetch('/lista-avaliacoes').then(r => r.json()).then(avs => {
+            const feed = document.getElementById('feed');
+            avs.forEach(a => {
+                feed.innerHTML += `
+                    <div class="card">
+                        <img src="img/uploads/${a.imagem}" width="150">
+                        <div>
+                            <h3>${a.titulo_filme} (Nota: ${a.nota})</h3>
+                            <p><strong>${a.nome}:</strong> ${a.comentario}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>

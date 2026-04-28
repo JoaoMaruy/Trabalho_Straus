@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Avaliar Filme - CineReview</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-container">
+       <form action="/avaliar" method="POST" enctype="multipart/form-data" class="auth-form">
+    <h2>Avaliar Filme</h2>
+    <input type="text" name="titulo" placeholder="Título do Filme" required>
+    <input type="number" name="nota" min="0" max="10" required>
+    
+    <label>Capa do Filme:</label>
+    <input type="file" name="imagem" accept="image/*" required>
+    
+    <textarea name="comentario" placeholder="O que achou?"></textarea>
+    <button type="submit">Enviar Review</button>
+</form>
+    </div>
+</body>
+</html>

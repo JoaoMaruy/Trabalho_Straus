@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Cadastro</title>
+</head>
+<body>
+    <div class="auth-form">
+        <form id="formCad">
+            <h2>Criar Conta</h2>
+            <input type="text" name="nome" placeholder="Nome" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Cadastrar</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('formCad').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = new URLSearchParams(new FormData(e.target));
+            const res = await fetch('/registrar', { method: 'POST', body: data });
+            if (res.ok) {
+                alert("Cadastro realizado com sucesso!");
+                window.location.href = '/login.html';
+            } else {
+                alert("Erro ao cadastrar.");
+            }
+        };
+    </script>
+</body>
+</html>
