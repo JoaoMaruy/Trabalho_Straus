@@ -6,18 +6,25 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="main-container">
-       <form action="/avaliar" method="POST" enctype="multipart/form-data" class="auth-form">
-    <h2>Avaliar Filme</h2>
-    <input type="text" name="titulo" placeholder="Título do Filme" required>
-    <input type="number" name="nota" min="0" max="10" required>
-    
-    <label>Capa do Filme:</label>
-    <input type="file" name="imagem" accept="image/*" required>
-    
-    <textarea name="comentario" placeholder="O que achou?"></textarea>
-    <button type="submit">Enviar Review</button>
-</form>
+    <div class="container"> <div class="navigation-area" style="margin-top: 40px;">
+            <a href="index.html" class="btn-back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Voltar para o Feed
+            </a>
+        </div>
+
+        <form action="/avaliar" method="POST" enctype="multipart/form-data" class="auth-form" style="margin-top: 20px;">
+            <h2>Avaliar Filme</h2>
+            <input type="text" name="titulo" placeholder="Título do Filme" required>
+            <input type="number" name="nota" placeholder="Nota (0 a 10)" min="0" max="10" required>
+            
+            <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem;">Capa do Filme:</label>
+            <input type="file" name="imagem" accept="image/*" required>
+            
+            <textarea name="comentario" placeholder="O que achou do filme?"></textarea>
+            
+            <button type="submit">Enviar Review</button>
+        </form>
     </div>
 </body>
 </html>

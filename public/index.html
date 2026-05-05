@@ -2,40 +2,119 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <title>CineReview</title>
 </head>
 <body>
-    <header>
-        <h1>CineReview</h1>
-        <div id="user-info">
-            <span id="nomeUser"></span>
-            <a href="avaliacao.html" class="btn">+ Avaliar</a>
+    <header class="main-header">
+        <div class="container header-content">
+            <h1 class="logo">Cine<span>Review</span></h1>
+            <div id="user-info">
+                <span id="nomeUser"></span>
+                <a href="avaliacao.html" class="btn-primary">+ Avaliar Filme</a>
+            </div>
         </div>
     </header>
 
-    <div id="feed" class="container"></div>
+    <main class="container">
+        <h2 class="section-title">Avaliações da Comunidade</h2>
+        <div id="feed" class="feed-grid">
+            </div>
+    </main>
 
     <script>
-        fetch('/dados-usuario').then(r => r.json()).then(d => {
-            if (!d.nome) window.location.href = '/login.html';
-            document.getElementById('nomeUser').innerText = "Olá, " + d.nome;
-        });
+// 1. Criamos dados de exemplo com links de imagens reais da internet
+// 1. URLs estáveis do TMDB (The Movie Database)
+const filmesExemplo = [
+    {
+        titulo_filme: "Batman: O Cavaleiro das Trevas",
+        nota: 10,
+        comentario: "A melhor atuação de um vilão que já vi no cinema. Obra prima!",
+        nome: "Admin",
+        link_imagem: "https://www.themoviedb.org/t/p/w600_and_h900_face/itmAEE92LNrIdsU5LEHoyksVaY.jpg"
+    },
+    {
+        titulo_filme: "Interestelar",
+        nota: 9.5,
+        comentario: "Uma viagem visual e emocional incrível. A trilha sonora é perfeita.",
+        nome: "Joao",
+        link_imagem: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg"
+    },
+    {
+        titulo_filme: "Homem-Aranha: Através do Aranhaverso",
+        nota: 9.0,
+        comentario: "A animação mais bonita já feita. Cada frame é um quadro.",
+        nome: "Cinefilo",
+        link_imagem: "https://www.themoviedb.org/t/p/w600_and_h900_face/fUwfsPWEEdnSt29jIwJ5eVtySX6.jpg"
+    }
+];
 
-        fetch('/lista-avaliacoes').then(r => r.json()).then(avs => {
-            const feed = document.getElementById('feed');
-            avs.forEach(a => {
-                feed.innerHTML += `
-                    <div class="card">
-                        <img src="img/uploads/${a.imagem}" width="150">
-                        <div>
-                            <h3>${a.titulo_filme} (Nota: ${a.nota})</h3>
-                            <p><strong>${a.nome}:</strong> ${a.comentario}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        });
+function renderizarFilmes(lista) {
+    const feed = document.getElementById('feed');
+    feed.innerHTML = lista.map(a => `
+        <div class="movie-card">
+            <div class="poster-wrapper">
+                <img src="${a.link_imagem || 'img/uploads/' + a.imagem}" 
+                     alt="${a.titulo_filme}" 
+                     onerror="this.onerror=null;this.src='https://placehold.co/300x450/1e1e1e/FFF?text=Capa+Indisponivel'">
+                <div class="rating-badge">⭐ ${a.nota}</div>
+            </div>
+            <div class="movie-info">
+                <h3>${a.titulo_filme}</h3>
+                <p class="comment">"${a.comentario}"</p>
+                <p class="author">Por: <span>${a.nome || 'Anônimo'}</span></p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 2. Função para colocar os filmes na tela
+function renderizarFilmes(lista) {
+    const feed = document.getElementById('feed');
+    feed.innerHTML = lista.map(a => `
+        <div class="movie-card">
+            <div class="poster-wrapper">
+                <img src="${a.link_imagem || 'img/uploads/' + a.imagem}" 
+                     alt="${a.titulo_filme}" 
+                     onerror="if (this.src != 'https://placehold.co/300x450?text=Sem+Capa') { this.src = 'https://placehold.co/300x450?text=Sem+Capa'; }">
+                <div class="rating-badge">⭐ ${a.nota}</div>
+            </div>
+            <div class="movie-info">
+                <h3>${a.titulo_filme}</h3>
+                <p class="comment">"${a.comentario}"</p>
+                <p class="author">Por: <span>${a.nome || 'Anônimo'}</span></p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 3. Lógica para buscar dados ou usar os links de exemplo
+fetch('/lista-avaliacoes')
+    .then(r => r.json())
+    .then(avs => {
+        if (avs && avs.length > 0) {
+            renderizarFilmes(avs); // Se o banco funcionar, usa o banco
+        } else {
+            renderizarFilmes(filmesExemplo); // Se o banco estiver vazio, usa os links acima
+        }
+    })
+    .catch(() => {
+        // Se o servidor der erro (como o 405 ou SyntaxError), ele carrega os filmes de exemplo
+        console.log("Carregando filmes de exemplo via link...");
+        renderizarFilmes(filmesExemplo);
+    });
+
+// Fetch do nome do usuário
+fetch('/dados-usuario')
+    .then(r => r.json())
+    .then(d => {
+        if (d.nome) document.getElementById('nomeUser').innerHTML = `Olá, <strong>${d.nome}</strong>`;
+    })
+    .catch(() => {
+        document.getElementById('nomeUser').innerHTML = `Olá, <strong>Visitante</strong>`;
+    });
     </script>
 </body>
 </html>

@@ -1,42 +1,157 @@
-body {
-  background: #141414;
-  color: white;
-  font-family: sans-serif;
+/* 1. Variáveis Globais - Facilita mudar as cores do site todo de uma vez */
+:root {
+  --bg-dark: #121212;       /* Fundo mais profundo */
+  --bg-surface: #1e1e1e;    /* Fundo de cards e formulários */
+  --primary: #e50914;       /* Vermelho Netflix */
+  --primary-hover: #f40612; 
+  --text-main: #ffffff;
+  --text-muted: #b3b3b3;    /* Cinza para textos menos importantes */
+  --border-radius: 8px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-.auth-form {
-  width: 300px;
-  margin: 100px auto;
-  background: #333;
-  padding: 20px;
-  border-radius: 8px;
-}
-input {
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 8px;
+
+/* 2. Reset e Base */
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
-button,
-.btn {
-  background: #e50914;
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; /* Fontes mais modernas */
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 3. Formulários de Autenticação (Login/Cadastro) */
+.auth-form {
+  width: 100%;
+  max-width: 400px; /* Um pouco mais largo para respiro */
+  margin: 80px auto;
+  background: var(--bg-surface);
+  padding: 40px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); /* Sombra para dar profundidade */
+}
+
+.auth-form h2 {
+  margin-bottom: 25px;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+input {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  background: #333;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #444;
+}
+
+/* 4. Botões e Elementos Clicáveis */
+button, .btn {
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 10px;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
   width: 100%;
   text-decoration: none;
   display: inline-block;
   text-align: center;
+  transition: var(--transition);
 }
+
+button:hover, .btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px); /* Efeito de levante */
+  box-shadow: 0 5px 15px rgba(229, 9, 20, 0.3);
+}
+
+button:active, .btn:active {
+  transform: translateY(0);
+}
+
+/* 5. Cards de Avaliação (Feed) */
 .card {
   display: flex;
-  background: #222;
-  margin: 20px;
-  padding: 15px;
-  border-radius: 8px;
-  gap: 20px;
+  background: var(--bg-surface);
+  margin: 20px 0;
+  padding: 0; /* Removi o padding interno para a imagem encostar na borda se desejar */
+  border-radius: var(--border-radius);
+  gap: 0; 
+  overflow: hidden; /* Garante que a imagem não saia do arredondamento */
+  transition: var(--transition);
+  border: 1px solid #2a2a2a;
 }
-.container {
-  max-width: 800px;
-  margin: auto;
+
+.card:hover {
+  transform: scale(1.02);
+  border-color: #444;
+}
+
+.card img {
+  width: 180px;
+  height: 250px;
+  object-fit: cover; /* Não distorce a imagem do filme */
+}
+
+.card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card h3 {
+  color: var(--primary);
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.card strong {
+  color: var(--text-main);
+}
+
+/* 6. Responsividade (Para celulares) */
+@media (max-width: 600px) {
+  .card {
+    flex-direction: column; /* No celular, a imagem fica em cima do texto */
+  }
+  
+  .card img {
+    width: 100%;
+    height: 300px;
+  }
+  
+  .auth-form {
+    padding: 20px;
+    margin: 40px 20px;
+  }
 }
