@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const session = require('express-session');
 const path = require('path');
 const multer = require('multer');
+const cors = require('cors'); // Adicione esta linha
 
 const app = express();
 

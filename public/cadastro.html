@@ -14,19 +14,37 @@
             <input type="password" name="senha" placeholder="Senha" required>
             <button type="submit">Cadastrar</button>
         </form>
+        
+        <!-- O novo botão foi adicionado aqui -->
+        <button class="btn-voltar" onclick="window.location.href='/login.html'">Já tenho conta (Login)</button>
     </div>
+
     <script>
-        document.getElementById('formCad').onsubmit = async (e) => {
-            e.preventDefault();
-            const data = new URLSearchParams(new FormData(e.target));
-            const res = await fetch('/registrar', { method: 'POST', body: data });
+    document.getElementById('formCad').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = new URLSearchParams(new FormData(e.target));
+        
+        try {
+            // ADICIONADO: A URL completa apontando para a porta 3000 do Node.js
+            const res = await fetch('http://localhost:3000/registrar', { 
+                method: 'POST', 
+                body: data 
+            });
+
             if (res.ok) {
                 alert("Cadastro realizado com sucesso!");
-                window.location.href = '/login.html';
+                // Garante que o redirecionamento vá para o servidor do Live Server ou do Node
+                window.location.href = '/login.html'; 
             } else {
-                alert("Erro ao cadastrar.");
+                // Seu back-end envia "Erro: E-mail já cadastrado." em caso de falha (status 400)
+                const txtErro = await res.text();
+                alert(txtErro || "Erro ao cadastrar.");
             }
-        };
-    </script>
+        } catch (error) {
+            console.error(error);
+            alert("Não foi possível conectar ao servidor back-end. Certifique-se de que ele está rodando!");
+        }
+    };
+</script>
 </body>
 </html>
