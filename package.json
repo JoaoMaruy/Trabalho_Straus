@@ -1,17 +1,20 @@
 {
   "name": "site-filmes",
   "version": "1.0.0",
-  "description": "Site de avaliação de filmes com login, registro e integração MySQL.",
+  "description": "Site de avaliação de filmes com login, registro e Back4App.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node scripts/seed-back4app.js",
+    "seed:back4app": "node scripts/seed-back4app.js"
   },
   "keywords": [
     "filmes",
     "avaliacao",
     "cinema",
     "reviews",
-    "mysql"
+    "back4app",
+    "parse"
   ],
   "author": "CineReview",
   "license": "ISC",
@@ -20,9 +23,11 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "multer": "^2.1.1",
-    "mysql2": "^3.22.3"
+    "parse": "^6.1.1",
+    "session-file-store": "^1.5.0"
   }
 }

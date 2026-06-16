@@ -1,0 +1,36 @@
+# Back4App — schema sistema_filmes (espelho do MySQL)
+#
+# Classes Parse (mesmos nomes das tabelas SQL):
+#
+# Classe: usuarios
+#   - nomeCompleto  (String, required)   → usuarios.nomeCompleto
+#   - nomeUsuario   (String, required)   → usuarios.nomeUsuario (unique)
+#   - email         (String, required)   → usuarios.email (unique)
+#   - senha         (String, required)   → usuarios.senha (bcrypt na web)
+#   - cpf           (String, required)   → usuarios.cpf (unique)
+#   - foto_perfil   (String, optional)   → extra web (upload)
+#
+# Classe: filmes
+#   - nome          (String, required)   → filmes.nome
+#   - sinopse       (String, required)   → filmes.sinopse
+#   - categoria     (String, required)   → filmes.categoria
+#   - idade         (String, required)   → filmes.idade
+#   - imagem        (String, optional)   → extra web (poster URL)
+#
+# Classe: avaliacoes
+#   - id_usuario    (Pointer → usuarios) → avaliacoes.id_usuario
+#   - nome_filme    (String, required)   → avaliacoes.nome_filme
+#   - nota          (Number, required)   → avaliacoes.nota (0–10, inteiro)
+#   - comentario    (String, required)   → avaliacoes.comentario
+#   - imagem        (String, optional)   → extra web (capa da avaliação)
+#
+# IDs: Parse usa objectId no lugar de AUTO_INCREMENT.
+#      Na API: id_usuario, id_filme, id_avaliacao = objectId.
+#
+# Permissões: bloquear acesso público (CLP). Servidor usa Master Key.
+#
+# Setup em máquina nova:
+#   git clone ...
+#   npm install
+#   npm start
+# O seed roda automaticamente se o banco estiver vazio.

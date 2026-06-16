@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Usuário - CineReview</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <nav class="nav-links">
+          <a href="index.html">Catálogo</a>
+          <a href="avaliacao.html">Avaliar</a>
+          <a href="perfil.html">Meu Perfil</a>
+        </nav>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="loading" class="empty-state">Carregando perfil...</div>
+      <div id="userProfile" style="display:none"></div>
+      <div id="notFound" class="empty-state" style="display:none">
+        Usuário não encontrado. <a href="index.html">Voltar</a>
+      </div>
+    </main>
+
+    <script src="js/main.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        const id = getQueryParam("id");
+        if (!id) {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("notFound").style.display = "block";
+          return;
+        }
+
+        try {
+          const perfil = await apiRequest(`/api/usuario/${encodeURIComponent(id)}`);
+          document.title = `${perfil.nomeCompleto} - CineReview`;
+          document.getElementById("loading").style.display = "none";
+
+          const avatar = perfil.foto_perfil || PLACEHOLDER_AVATAR;
+          const memberSince = formatDate(perfil.criado_em);
+
+          document.getElementById("userProfile").innerHTML = `
+            <section class="profile-panel">
+              <div class="profile-top">
+                <img src="${escapeHtml(avatar)}" alt="${escapeHtml(perfil.nomeCompleto)}"
+                  class="profile-avatar" onerror="this.src='${PLACEHOLDER_AVATAR}'" />
+                <div class="profile-top-info">
+                  <h2>${escapeHtml(perfil.nomeCompleto)}</h2>
+                  <p class="profile-email">@${escapeHtml(perfil.nomeUsuario)} · Membro desde ${memberSince}</p>
+                  <div class="profile-stats-row">
+                    <div class="stat-pill"><strong>${perfil.totalAvaliacoes}</strong> avaliações</div>
+                    <div class="stat-pill"><strong>${perfil.mediaNotas.toFixed(1)}</strong> nota média</div>
+                  </div>
+                </div>
+              </div>
+              <h3 class="section-title">Avaliações de ${escapeHtml(perfil.nomeCompleto)}</h3>
+              <div id="userReviews" class="feed-grid"></div>
+              <div id="userReviewsEmpty" class="empty-state" style="display:none">
+                Este usuário ainda não fez avaliações.
+              </div>
+            </section>
+          `;
+          document.getElementById("userProfile").style.display = "block";
+
+          if (!perfil.avaliacoes.length) {
+            document.getElementById("userReviewsEmpty").style.display = "block";
+          } else {
+            const enriched = perfil.avaliacoes.map((r) => ({
+              ...r,
+              nomeCompleto: perfil.nomeCompleto,
+              id_usuario: perfil.id_usuario,
+              usuario_foto: perfil.foto_perfil,
+            }));
+            renderReviewCards(enriched, "userReviews");
+          }
+        } catch {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("notFound").style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>

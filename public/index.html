@@ -11,7 +11,8 @@
       <div class="container header-inner">
         <a class="brand" href="index.html">Cine<span>Review</span></a>
         <nav class="nav-links">
-          <a href="index.html">Avaliações</a>
+          <a href="index.html">Catálogo</a>
+          <a href="#avaliacoes">Avaliações</a>
           <a href="avaliacao.html">Avaliar</a>
           <a href="perfil.html">Meu Perfil</a>
         </nav>
@@ -22,39 +23,41 @@
     <main class="container">
       <section class="hero">
         <div class="hero-copy">
-          <h1>
-            O melhor lugar para avaliar filmes como um crítico profissional.
-          </h1>
+          <h1>O melhor lugar para avaliar filmes como um crítico profissional.</h1>
           <p>
-            Descubra as opiniões da comunidade, avalie seus títulos favoritos e
-            construa um perfil de cinema completo.
+            Descubra as opiniões da comunidade, explore sinopses e notas agregadas
+            no estilo IMDb e Rotten Tomatoes.
           </p>
           <a href="avaliacao.html" class="btn-primary">Adicionar avaliação</a>
         </div>
       </section>
 
       <section>
-        <div class="profile-header">
-          <div>
-            <h2 class="section-title">Avaliações recentes</h2>
-            <p class="form-message info">
-              As avaliações mais recentes da comunidade aparecem abaixo. Faça
-              login para enviar a sua.
-            </p>
-          </div>
+        <div class="section-header">
+          <h2 class="section-title">Catálogo de filmes</h2>
+          <p class="section-subtitle">Clique em um filme para ver sinopse, nota média e todas as críticas.</p>
         </div>
+        <div id="catalog" class="catalog-grid"></div>
+        <div id="catalog-empty" class="empty-state" style="display:none">
+          Nenhum filme avaliado ainda.
+        </div>
+      </section>
 
+      <section id="avaliacoes" class="section-spaced">
+        <div class="section-header">
+          <h2 class="section-title">Avaliações recentes</h2>
+          <p class="section-subtitle">As críticas mais recentes da comunidade.</p>
+        </div>
         <div id="feed" class="feed-grid"></div>
-        <div id="feed-empty" class="empty-state" style="display: none">
-          Nenhuma avaliação encontrada por enquanto.
+        <div id="feed-empty" class="empty-state" style="display:none">
+          Nenhuma avaliação encontrada.
         </div>
       </section>
     </main>
 
     <footer class="footer">
       <div class="container">
-        CineReview — visual limpo, integração real com banco de dados e
-        experiência profissional.
+        CineReview — avaliações profissionais com dados na nuvem (Back4App).
       </div>
     </footer>
 
@@ -64,15 +67,28 @@
         await loadHeader();
 
         try {
-          const reviews = await apiRequest("/api/avaliacoes");
-          if (!reviews || !reviews.length) {
-            document.getElementById("feed-empty").style.display = "block";
-            return;
+          const filmes = await apiRequest("/api/filmes");
+          if (!filmes.length) {
+            document.getElementById("catalog-empty").style.display = "block";
+          } else {
+            renderMovieGrid(filmes, "catalog");
           }
-          renderReviewCards(reviews, "feed");
-        } catch (error) {
+        } catch {
+          document.getElementById("catalog-empty").textContent =
+            "Não foi possível carregar o catálogo.";
+          document.getElementById("catalog-empty").style.display = "block";
+        }
+
+        try {
+          const reviews = await apiRequest("/api/avaliacoes");
+          if (!reviews.length) {
+            document.getElementById("feed-empty").style.display = "block";
+          } else {
+            renderReviewCards(reviews, "feed");
+          }
+        } catch {
           document.getElementById("feed-empty").textContent =
-            "Não foi possível carregar as avaliações agora.";
+            "Não foi possível carregar as avaliações.";
           document.getElementById("feed-empty").style.display = "block";
         }
       });

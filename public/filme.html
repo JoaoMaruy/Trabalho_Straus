@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filme - CineReview</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <nav class="nav-links">
+          <a href="index.html">Catálogo</a>
+          <a href="avaliacao.html">Avaliar</a>
+          <a href="perfil.html">Meu Perfil</a>
+        </nav>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="loading" class="empty-state">Carregando filme...</div>
+      <div id="movieDetail" style="display:none"></div>
+      <div id="notFound" class="empty-state" style="display:none">
+        Filme não encontrado. <a href="index.html">Voltar ao catálogo</a>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">CineReview</div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        const nome = getQueryParam("nome") || getQueryParam("titulo");
+        if (!nome) {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("notFound").style.display = "block";
+          return;
+        }
+
+        try {
+          const data = await apiRequest(`/api/filme/${encodeURIComponent(nome)}`);
+          const { filme, avaliacoes } = data;
+          document.title = `${filme.nome} - CineReview`;
+          document.getElementById("loading").style.display = "none";
+
+          const pctPositive = avaliacoes.length
+            ? Math.round(
+                (avaliacoes.filter((a) => Number(a.nota) >= 7).length / avaliacoes.length) * 100,
+              )
+            : 0;
+
+          document.getElementById("movieDetail").innerHTML = `
+            <section class="movie-hero">
+              <div class="movie-hero-poster">
+                <img src="${escapeHtml(filme.imagem)}" alt="${escapeHtml(filme.nome)}"
+                  onerror="this.src='${PLACEHOLDER_POSTER}'" />
+              </div>
+              <div class="movie-hero-info">
+                <h1>${escapeHtml(filme.nome)}</h1>
+                <p class="movie-meta">
+                  ${filme.categoria ? `<span>${escapeHtml(filme.categoria)}</span>` : ""}
+                  ${filme.idade ? `<span>Class. ${escapeHtml(filme.idade)}+</span>` : ""}
+                </p>
+                <div class="movie-scores">
+                  <div class="score-box ${ratingColor(filme.media)}">
+                    <span class="score-big">${filme.media.toFixed(1)}</span>
+                    <span class="score-label">Nota média</span>
+                    <span class="review-stars">${renderStars(filme.media)}</span>
+                  </div>
+                  <div class="score-box score-tomato">
+                    <span class="score-big">${pctPositive}%</span>
+                    <span class="score-label">Críticas positivas</span>
+                    <span class="score-sublabel">notas ≥ 7</span>
+                  </div>
+                  <div class="score-box score-count">
+                    <span class="score-big">${filme.total_avaliacoes}</span>
+                    <span class="score-label">Avaliações</span>
+                    <span class="score-sublabel">${filme.nota_minima} – ${filme.nota_maxima}</span>
+                  </div>
+                </div>
+                <p class="movie-synopsis">${escapeHtml(filme.sinopse)}</p>
+                <a href="avaliacao.html?nome=${encodeURIComponent(filme.nome)}" class="btn-primary">Avaliar este filme</a>
+              </div>
+            </section>
+
+            <section class="movie-breakdown">
+              <h2 class="section-title">Distribuição de notas</h2>
+              <div class="score-bars">${renderScoreBars(filme.distribuicao, filme.total_avaliacoes)}</div>
+            </section>
+
+            <section class="section-spaced">
+              <h2 class="section-title">Críticas da comunidade (${avaliacoes.length})</h2>
+              <div id="reviewsList" class="reviews-list"></div>
+            </section>
+          `;
+          document.getElementById("movieDetail").style.display = "block";
+          renderReviewList(avaliacoes, "reviewsList");
+        } catch {
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("notFound").style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>

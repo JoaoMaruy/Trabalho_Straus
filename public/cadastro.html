@@ -18,36 +18,28 @@
       <section class="auth-panel">
         <form class="auth-form" id="registerForm">
           <h2>Criar conta</h2>
+          <p class="form-message info">
+            Campos alinhados ao banco <strong>sistema_filmes</strong> (usuarios).
+          </p>
           <div class="input-group">
-            <label for="nome">Nome completo</label>
-            <input
-              id="nome"
-              type="text"
-              name="nome"
-              placeholder="Seu nome"
-              required
-            />
+            <label for="nomeCompleto">Nome completo</label>
+            <input id="nomeCompleto" name="nomeCompleto" type="text" required />
+          </div>
+          <div class="input-group">
+            <label for="nomeUsuario">Nome de usuário</label>
+            <input id="nomeUsuario" name="nomeUsuario" type="text" required />
           </div>
           <div class="input-group">
             <label for="email">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="seu@email.com"
-              required
-            />
+            <input id="email" name="email" type="email" required />
+          </div>
+          <div class="input-group">
+            <label for="cpf">CPF</label>
+            <input id="cpf" name="cpf" type="text" maxlength="11" placeholder="Somente números" required />
           </div>
           <div class="input-group">
             <label for="senha">Senha</label>
-            <input
-              id="senha"
-              type="password"
-              name="senha"
-              placeholder="Senha segura"
-              minlength="6"
-              required
-            />
+            <input id="senha" name="senha" type="password" required />
           </div>
           <button type="submit" class="btn-primary">Cadastrar</button>
           <p class="form-message info">
@@ -71,18 +63,16 @@
           message.textContent = "";
 
           const data = {
-            nome: form.nome.value.trim(),
+            nomeCompleto: form.nomeCompleto.value.trim(),
+            nomeUsuario: form.nomeUsuario.value.trim(),
             email: form.email.value.trim(),
-            senha: form.senha.value.trim(),
+            cpf: form.cpf.value.trim(),
+            senha: form.senha.value,
           };
 
           try {
             await apiRequest("/api/registrar", { method: "POST", body: data });
-            showMessage(
-              message,
-              "Conta criada com sucesso! Redirecionando...",
-              "success",
-            );
+            showMessage(message, "Conta criada! Redirecionando...", "success");
             setTimeout(() => (window.location.href = "login.html"), 1000);
           } catch (error) {
             showMessage(message, error.message, "error");

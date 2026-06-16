@@ -19,12 +19,12 @@
         <form class="auth-form" id="loginForm">
           <h2>Entrar</h2>
           <div class="input-group">
-            <label for="email">E-mail</label>
+            <label for="login">Usuário ou e-mail</label>
             <input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="seu@email.com"
+              id="login"
+              type="text"
+              name="login"
+              placeholder="admin ou admin@email.com"
               required
             />
           </div>
@@ -61,13 +61,19 @@
           message.textContent = "";
 
           const data = {
-            email: form.email.value.trim(),
-            senha: form.senha.value.trim(),
+            login: form.login.value.trim(),
+            senha: form.senha.value,
           };
 
           try {
             await apiRequest("/api/login", { method: "POST", body: data });
-            window.location.href = "index.html";
+            const params = new URLSearchParams(window.location.search);
+            const returnTo = params.get("return");
+            const safe =
+              returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+                ? returnTo
+                : "index.html";
+            window.location.href = safe;
           } catch (error) {
             showMessage(message, error.message, "error");
           }

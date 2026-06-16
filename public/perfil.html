@@ -11,7 +11,7 @@
       <div class="container header-inner">
         <a class="brand" href="index.html">Cine<span>Review</span></a>
         <nav class="nav-links">
-          <a href="index.html">Avaliações</a>
+          <a href="index.html">Catálogo</a>
           <a href="avaliacao.html">Avaliar</a>
         </nav>
         <div class="user-actions" id="user-actions"></div>
@@ -20,24 +20,74 @@
 
     <main class="container">
       <section class="profile-panel">
-        <div class="profile-header">
-          <div>
-            <h2>Seu perfil</h2>
-            <p class="form-message info">
-              Veja suas avaliações e mantenha seu histórico de cinema
-              atualizado.
-            </p>
+        <div class="profile-top">
+          <div class="avatar-upload">
+            <img id="avatarPreview" src="" alt="Foto de perfil" class="profile-avatar" />
+            <label class="avatar-change-btn">
+              Alterar foto
+              <input type="file" id="avatarInput" accept="image/*" hidden />
+            </label>
+            <p id="avatarMessage" class="form-message"></p>
+          </div>
+          <div class="profile-top-info">
+            <h2 id="profileName">Seu perfil</h2>
+            <p id="profileEmail" class="profile-email"></p>
+            <div class="profile-stats-row">
+              <div class="stat-pill"><strong id="statReviews">0</strong> avaliações</div>
+              <div class="stat-pill"><strong id="statAvg">—</strong> nota média</div>
+            </div>
           </div>
         </div>
 
-        <div class="profile-summary" id="profileSummary"></div>
+        <div class="profile-tabs">
+          <button class="tab-btn active" data-tab="dados">Meus dados</button>
+          <button class="tab-btn" data-tab="avaliacoes">Filmes avaliados</button>
+          <button class="tab-btn" data-tab="senha">Alterar senha</button>
+        </div>
 
-        <div>
-          <h3 class="section-title">Minhas avaliações</h3>
+        <div id="tab-dados" class="tab-panel active">
+          <form id="profileForm" class="auth-form">
+            <div class="input-group">
+              <label for="nomeCompleto">Nome completo</label>
+              <input id="nomeCompleto" name="nomeCompleto" type="text" required />
+            </div>
+            <div class="input-group">
+              <label for="nomeUsuario">Nome de usuário</label>
+              <input id="nomeUsuario" name="nomeUsuario" type="text" required />
+            </div>
+            <div class="input-group">
+              <label for="email">E-mail</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <div class="input-group">
+              <label for="cpf">CPF</label>
+              <input id="cpf" name="cpf" type="text" maxlength="11" required />
+            </div>
+            <button type="submit" class="btn-primary">Salvar alterações</button>
+            <p id="profileMessage" class="form-message"></p>
+          </form>
+        </div>
+
+        <div id="tab-avaliacoes" class="tab-panel">
           <div id="myReviews" class="feed-grid"></div>
-          <div id="myReviewsEmpty" class="empty-state" style="display: none">
+          <div id="myReviewsEmpty" class="empty-state" style="display:none">
             Você ainda não fez nenhuma avaliação.
           </div>
+        </div>
+
+        <div id="tab-senha" class="tab-panel">
+          <form id="passwordForm" class="auth-form">
+            <div class="input-group">
+              <label for="senhaAtual">Senha atual</label>
+              <input id="senhaAtual" name="senhaAtual" type="password" required />
+            </div>
+            <div class="input-group">
+              <label for="novaSenha">Nova senha</label>
+              <input id="novaSenha" name="novaSenha" type="password" minlength="6" required />
+            </div>
+            <button type="submit" class="btn-primary">Alterar senha</button>
+            <p id="passwordMessage" class="form-message"></p>
+          </form>
         </div>
       </section>
     </main>
@@ -45,34 +95,114 @@
     <script src="js/main.js" defer></script>
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        await loadHeader();
-        const user = await redirectIfNotAuthenticated();
-        if (!user) return;
+        const user = await loadHeader();
+        if (!user) {
+          const returnTo = encodeURIComponent(
+            window.location.pathname + window.location.search,
+          );
+          window.location.href = `login.html?return=${returnTo}`;
+          return;
+        }
 
-        const summary = document.getElementById("profileSummary");
-        summary.innerHTML = `
-        <div class="profile-card">
-          <strong>Nome</strong>
-          <p>${user.nome}</p>
-        </div>
-        <div class="profile-card">
-          <strong>E-mail</strong>
-          <p>${user.email}</p>
-        </div>
-        <div class="profile-card">
-          <strong>Avaliações enviadas</strong>
-          <p>${user.totalAvaliacoes}</p>
-        </div>
-      `;
+        const avatar = user.foto_perfil || PLACEHOLDER_AVATAR;
+        document.getElementById("avatarPreview").src = avatar;
+        document.getElementById("profileName").textContent = user.nomeCompleto;
+        document.getElementById("profileEmail").textContent =
+          `@${user.nomeUsuario} · ${user.email}`;
+        document.getElementById("statReviews").textContent = user.totalAvaliacoes;
+        document.getElementById("nomeCompleto").value = user.nomeCompleto;
+        document.getElementById("nomeUsuario").value = user.nomeUsuario;
+        document.getElementById("email").value = user.email;
+        document.getElementById("cpf").value = user.cpf;
+
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+            document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+            btn.classList.add("active");
+            document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+          });
+        });
+
+        document.getElementById("avatarInput").addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const msg = document.getElementById("avatarMessage");
+          msg.textContent = "Enviando...";
+          msg.className = "form-message info";
+
+          const formData = new FormData();
+          formData.append("foto", file);
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/perfil/foto`, {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            document.getElementById("avatarPreview").src = data.foto_perfil;
+            showMessage(msg, "Foto atualizada!", "success");
+            await loadHeader();
+          } catch (err) {
+            showMessage(msg, err.message, "error");
+          }
+        });
+
+        document.getElementById("profileForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const msg = document.getElementById("profileMessage");
+          try {
+            const data = await apiRequest("/api/perfil", {
+              method: "PUT",
+              body: {
+                nomeCompleto: document.getElementById("nomeCompleto").value.trim(),
+                nomeUsuario: document.getElementById("nomeUsuario").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                cpf: document.getElementById("cpf").value.trim(),
+              },
+            });
+            document.getElementById("profileName").textContent = data.usuario.nomeCompleto;
+            document.getElementById("profileEmail").textContent =
+              `@${data.usuario.nomeUsuario} · ${data.usuario.email}`;
+            showMessage(msg, "Perfil atualizado com sucesso!", "success");
+            await loadHeader();
+          } catch (err) {
+            showMessage(msg, err.message, "error");
+          }
+        });
+
+        document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const msg = document.getElementById("passwordMessage");
+          try {
+            await apiRequest("/api/perfil/senha", {
+              method: "PUT",
+              body: {
+                senhaAtual: document.getElementById("senhaAtual").value,
+                novaSenha: document.getElementById("novaSenha").value,
+              },
+            });
+            document.getElementById("passwordForm").reset();
+            showMessage(msg, "Senha alterada com sucesso!", "success");
+          } catch (err) {
+            showMessage(msg, err.message, "error");
+          }
+        });
 
         try {
           const reviews = await apiRequest("/api/minhas-avaliacoes");
           if (!reviews.length) {
             document.getElementById("myReviewsEmpty").style.display = "block";
-            return;
+          } else {
+            const avg =
+              Math.round(
+                (reviews.reduce((s, r) => s + Number(r.nota), 0) / reviews.length) * 10,
+              ) / 10;
+            document.getElementById("statAvg").textContent = avg.toFixed(1);
+            renderReviewCards(reviews, "myReviews");
           }
-          renderReviewCards(reviews, "myReviews");
-        } catch (error) {
+        } catch {
           document.getElementById("myReviewsEmpty").textContent =
             "Falha ao carregar suas avaliações.";
           document.getElementById("myReviewsEmpty").style.display = "block";
