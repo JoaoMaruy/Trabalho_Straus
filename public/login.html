@@ -2,24 +2,77 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - CineReview</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div class="main-container">
-      <form action="/login" method="POST" class="auth-form">
-        <h2>Entrar</h2>
-        <div class="input-group">
-          <label>E-mail</label>
-          <input type="email" name="email" required />
-        </div>
-        <div class="input-group">
-          <label>Senha</label>
-          <input type="password" name="senha" required />
-        </div>
-        <button type="submit">Entrar</button>
-        <p>Novo por aqui? <a href="cadastro.html">Assine agora</a></p>
-      </form>
-    </div>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="auth-panel">
+        <form class="auth-form" id="loginForm">
+          <h2>Entrar</h2>
+          <div class="input-group">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="senha">Senha</label>
+            <input
+              id="senha"
+              type="password"
+              name="senha"
+              placeholder="Sua senha"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-primary">Entrar</button>
+          <p class="form-message info">
+            Ainda não tem conta? <a href="cadastro.html">Cadastre-se agora</a>.
+          </p>
+          <p id="message" class="form-message"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="js/main.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        const user = await redirectIfAuthenticated();
+        if (user) return;
+
+        const form = document.getElementById("loginForm");
+        const message = document.getElementById("message");
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          message.textContent = "";
+
+          const data = {
+            email: form.email.value.trim(),
+            senha: form.senha.value.trim(),
+          };
+
+          try {
+            await apiRequest("/api/login", { method: "POST", body: data });
+            window.location.href = "index.html";
+          } catch (error) {
+            showMessage(message, error.message, "error");
+          }
+        });
+      });
+    </script>
   </body>
 </html>

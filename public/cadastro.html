@@ -1,50 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="css/style.css">
-    <title>Cadastro</title>
-</head>
-<body>
-    <div class="auth-form">
-        <form id="formCad">
-            <h2>Criar Conta</h2>
-            <input type="text" name="nome" placeholder="Nome" required>
-            <input type="email" name="email" placeholder="E-mail" required>
-            <input type="password" name="senha" placeholder="Senha" required>
-            <button type="submit">Cadastrar</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro - CineReview</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="auth-panel">
+        <form class="auth-form" id="registerForm">
+          <h2>Criar conta</h2>
+          <div class="input-group">
+            <label for="nome">Nome completo</label>
+            <input
+              id="nome"
+              type="text"
+              name="nome"
+              placeholder="Seu nome"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="senha">Senha</label>
+            <input
+              id="senha"
+              type="password"
+              name="senha"
+              placeholder="Senha segura"
+              minlength="6"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+          <p class="form-message info">
+            Já tem conta? <a href="login.html">Faça login</a>.
+          </p>
+          <p id="message" class="form-message"></p>
         </form>
-        
-        <!-- O novo botão foi adicionado aqui -->
-        <button class="btn-voltar" onclick="window.location.href='/login.html'">Já tenho conta (Login)</button>
-    </div>
+      </section>
+    </main>
 
+    <script src="js/main.js" defer></script>
     <script>
-    document.getElementById('formCad').onsubmit = async (e) => {
-        e.preventDefault();
-        const data = new URLSearchParams(new FormData(e.target));
-        
-        try {
-            // ADICIONADO: A URL completa apontando para a porta 3000 do Node.js
-            const res = await fetch('http://localhost:3000/registrar', { 
-                method: 'POST', 
-                body: data 
-            });
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        await redirectIfAuthenticated();
+        const form = document.getElementById("registerForm");
+        const message = document.getElementById("message");
 
-            if (res.ok) {
-                alert("Cadastro realizado com sucesso!");
-                // Garante que o redirecionamento vá para o servidor do Live Server ou do Node
-                window.location.href = '/login.html'; 
-            } else {
-                // Seu back-end envia "Erro: E-mail já cadastrado." em caso de falha (status 400)
-                const txtErro = await res.text();
-                alert(txtErro || "Erro ao cadastrar.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Não foi possível conectar ao servidor back-end. Certifique-se de que ele está rodando!");
-        }
-    };
-</script>
-</body>
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          message.textContent = "";
+
+          const data = {
+            nome: form.nome.value.trim(),
+            email: form.email.value.trim(),
+            senha: form.senha.value.trim(),
+          };
+
+          try {
+            await apiRequest("/api/registrar", { method: "POST", body: data });
+            showMessage(
+              message,
+              "Conta criada com sucesso! Redirecionando...",
+              "success",
+            );
+            setTimeout(() => (window.location.href = "login.html"), 1000);
+          } catch (error) {
+            showMessage(message, error.message, "error");
+          }
+        });
+      });
+    </script>
+  </body>
 </html>

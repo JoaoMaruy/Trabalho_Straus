@@ -1,16 +1,23 @@
 {
   "name": "site-filmes",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Site de avaliação de filmes com login, registro e integração MySQL.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "filmes",
+    "avaliacao",
+    "cinema",
+    "reviews",
+    "mysql"
+  ],
+  "author": "CineReview",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
     "express": "^5.2.1",

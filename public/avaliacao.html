@@ -1,30 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Avaliar Filme - CineReview</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container"> <div class="navigation-area" style="margin-top: 40px;">
-            <a href="index.html" class="btn-back">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                Voltar para o Feed
-            </a>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <nav class="nav-links">
+          <a href="index.html">Avaliações</a>
+          <a href="perfil.html">Meu Perfil</a>
+        </nav>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="auth-panel">
+        <div class="profile-header">
+          <div>
+            <h2>Avaliar Filme</h2>
+            <p class="form-message info">
+              Escreva uma avaliação completa para ajudar outros cinéfilos.
+            </p>
+          </div>
         </div>
 
-        <form action="/avaliar" method="POST" enctype="multipart/form-data" class="auth-form" style="margin-top: 20px;">
-            <h2>Avaliar Filme</h2>
-            <input type="text" name="titulo" placeholder="Título do Filme" required>
-            <input type="number" name="nota" placeholder="Nota (0 a 10)" min="0" max="10" required>
-            
-            <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem;">Capa do Filme:</label>
-            <input type="file" name="imagem" accept="image/*" required>
-            
-            <textarea name="comentario" placeholder="O que achou do filme?"></textarea>
-            
-            <button type="submit">Enviar Review</button>
+        <form class="auth-form" id="reviewForm" enctype="multipart/form-data">
+          <div class="input-group">
+            <label for="titulo">Título do filme</label>
+            <input
+              id="titulo"
+              type="text"
+              name="titulo"
+              placeholder="Nome do filme"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="nota">Nota (0.0 a 10.0)</label>
+            <input
+              id="nota"
+              type="number"
+              name="nota"
+              placeholder="9.0"
+              min="0"
+              max="10"
+              step="0.1"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="linkImagem">URL da capa (opcional)</label>
+            <input
+              id="linkImagem"
+              type="url"
+              name="linkImagem"
+              placeholder="https://..."
+            />
+          </div>
+          <div class="input-group">
+            <label for="imagem">Upload de capa (opcional)</label>
+            <input id="imagem" type="file" name="imagem" accept="image/*" />
+          </div>
+          <div class="input-group">
+            <label for="comentario">Comentário</label>
+            <textarea
+              id="comentario"
+              name="comentario"
+              placeholder="Escreva sua opinião sobre o filme"
+              required
+            ></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Enviar avaliação</button>
+          <p id="message" class="form-message"></p>
         </form>
-    </div>
-</body>
+      </section>
+    </main>
+
+    <script src="js/main.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        await redirectIfNotAuthenticated();
+        const form = document.getElementById("reviewForm");
+        const message = document.getElementById("message");
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          message.textContent = "";
+
+          const formData = new FormData(form);
+          try {
+            await fetch(`${API_BASE_URL}/api/avaliar`, {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+            showMessage(
+              message,
+              "Avaliação enviada com sucesso! Redirecionando...",
+              "success",
+            );
+            setTimeout(() => (window.location.href = "index.html"), 800);
+          } catch (error) {
+            showMessage(message, error.message, "error");
+          }
+        });
+      });
+    </script>
+  </body>
 </html>

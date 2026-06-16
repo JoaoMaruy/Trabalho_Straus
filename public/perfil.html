@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perfil - CineReview</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <nav class="nav-links">
+          <a href="index.html">Avaliações</a>
+          <a href="avaliacao.html">Avaliar</a>
+        </nav>
+        <div class="user-actions" id="user-actions"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="profile-panel">
+        <div class="profile-header">
+          <div>
+            <h2>Seu perfil</h2>
+            <p class="form-message info">
+              Veja suas avaliações e mantenha seu histórico de cinema
+              atualizado.
+            </p>
+          </div>
+        </div>
+
+        <div class="profile-summary" id="profileSummary"></div>
+
+        <div>
+          <h3 class="section-title">Minhas avaliações</h3>
+          <div id="myReviews" class="feed-grid"></div>
+          <div id="myReviewsEmpty" class="empty-state" style="display: none">
+            Você ainda não fez nenhuma avaliação.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/main.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        await loadHeader();
+        const user = await redirectIfNotAuthenticated();
+        if (!user) return;
+
+        const summary = document.getElementById("profileSummary");
+        summary.innerHTML = `
+        <div class="profile-card">
+          <strong>Nome</strong>
+          <p>${user.nome}</p>
+        </div>
+        <div class="profile-card">
+          <strong>E-mail</strong>
+          <p>${user.email}</p>
+        </div>
+        <div class="profile-card">
+          <strong>Avaliações enviadas</strong>
+          <p>${user.totalAvaliacoes}</p>
+        </div>
+      `;
+
+        try {
+          const reviews = await apiRequest("/api/minhas-avaliacoes");
+          if (!reviews.length) {
+            document.getElementById("myReviewsEmpty").style.display = "block";
+            return;
+          }
+          renderReviewCards(reviews, "myReviews");
+        } catch (error) {
+          document.getElementById("myReviewsEmpty").textContent =
+            "Falha ao carregar suas avaliações.";
+          document.getElementById("myReviewsEmpty").style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>
