@@ -1,5 +1,5 @@
 /**
- * Diagnóstico do banco Back4App (Parse).
+ * Diagnostico do banco Back4App (Parse) usado pelo site.
  * Uso: node scripts/test-database.js
  */
 require("dotenv").config();
@@ -12,112 +12,76 @@ Parse.initialize(config.appId, config.jsKey, config.masterKey);
 Parse.serverURL = config.serverURL;
 
 const MASTER = { useMasterKey: true };
-const Usuario = Parse.Object.extend("Usuario");
-const Avaliacao = Parse.Object.extend("Avaliacao");
+const Usuarios = Parse.Object.extend("usuarios");
+const Filmes = Parse.Object.extend("Filme");
+const Avaliacoes = Parse.Object.extend("avaliacoes");
 
-const section = (title) => console.log(`\n${"=".repeat(50)}\n${title}\n${"=".repeat(50)}`);
+const section = (title) => {
+  console.log(`\n${"=".repeat(50)}\n${title}\n${"=".repeat(50)}`);
+};
 
 const run = async () => {
-  section("1. CONFIGURAÇÃO");
+  section("1. CONFIGURACAO");
   console.log("Server URL:", config.serverURL);
-  console.log("App ID:", config.appId?.slice(0, 8) + "...");
+  console.log("App ID:", `${config.appId?.slice(0, 8)}...`);
 
-  section("2. CONEXÃO COM BACK4APP");
+  section("2. CONEXAO COM BACK4APP");
   try {
-    const ping = new Parse.Query(Usuario);
-    await ping.limit(1).find(MASTER);
-    console.log("✓ Conexão OK — Parse respondeu com sucesso.");
+    await new Parse.Query(Usuarios).limit(1).find(MASTER);
+    console.log("OK: Parse respondeu com sucesso.");
   } catch (err) {
-    console.error("✗ Falha na conexão:", err.message);
+    console.error("Falha na conexao:", err.message);
     process.exit(1);
   }
 
   section("3. CONTAGEM DE REGISTROS");
-  const userQuery = new Parse.Query(Usuario);
-  const reviewQuery = new Parse.Query(Avaliacao);
-  const [totalUsuarios, totalAvaliacoes] = await Promise.all([
-    userQuery.count(MASTER),
-    reviewQuery.count(MASTER),
+  const [totalUsuarios, totalFilmes, totalAvaliacoes] = await Promise.all([
+    new Parse.Query(Usuarios).count(MASTER),
+    new Parse.Query(Filmes).count(MASTER),
+    new Parse.Query(Avaliacoes).count(MASTER),
   ]);
-  console.log(`Usuários cadastrados:  ${totalUsuarios}`);
-  console.log(`Avaliações registradas: ${totalAvaliacoes}`);
+  console.log(`Usuarios cadastrados:  ${totalUsuarios}`);
+  console.log(`Filmes cadastrados:    ${totalFilmes}`);
+  console.log(`Avaliacoes registradas:${totalAvaliacoes}`);
 
-  section("4. USUÁRIOS (até 10)");
-  const users = await new Parse.Query(Usuario)
+  section("4. USUARIOS (ate 10)");
+  const users = await new Parse.Query(Usuarios)
     .limit(10)
     .ascending("createdAt")
     .find(MASTER);
 
   if (users.length === 0) {
-    console.log("(nenhum usuário encontrado — rode: npm run seed:back4app)");
+    console.log("(nenhum usuario encontrado - rode: npm run seed:back4app)");
   } else {
     users.forEach((u, i) => {
       console.log(
-        `  ${i + 1}. [${u.id}] ${u.get("nome")} <${u.get("email")}> — criado em ${u.get("createdAt")?.toISOString()}`,
+        `  ${i + 1}. [${u.id}] ${u.get("nomeUsuario")} <${u.get("email")}>`,
       );
     });
   }
 
-  section("5. AVALIAÇÕES / FILMES (até 10, com autor)");
+  section("5. AVALIACOES RECENTES (ate 10)");
   const reviews = await repository.getRecentReviews(10);
-
   if (reviews.length === 0) {
-    console.log("(nenhuma avaliação encontrada)");
+    console.log("(nenhuma avaliacao encontrada)");
   } else {
     reviews.forEach((r, i) => {
-      console.log(`  ${i + 1}. "${r.titulo_filme}" — nota ${r.nota}/10`);
-      console.log(`     Autor: ${r.nome} | ID: ${r.id}`);
-      console.log(`     Comentário: ${r.comentario?.slice(0, 80)}${r.comentario?.length > 80 ? "..." : ""}`);
-      if (r.imagem) console.log(`     Imagem: ${r.imagem}`);
-      console.log(`     Criado em: ${r.criado_em}`);
+      console.log(`  ${i + 1}. "${r.nome_filme}" - nota ${r.nota}/10`);
+      console.log(`     Autor: ${r.nomeUsuario || r.nomeCompleto || "sem autor"}`);
+      console.log(`     Comentario: ${String(r.comentario || "").slice(0, 80)}`);
     });
   }
 
-  section("6. FILMES ÚNICOS (agrupados por título)");
-  const allReviews = await new Parse.Query(Avaliacao)
-    .limit(1000)
-    .find(MASTER);
-
-  const filmesMap = {};
-  for (const av of allReviews) {
-    const titulo = av.get("titulo_filme");
-    if (!titulo) continue;
-    if (!filmesMap[titulo]) filmesMap[titulo] = { count: 0, notas: [] };
-    filmesMap[titulo].count++;
-    filmesMap[titulo].notas.push(av.get("nota"));
-  }
-
-  const filmes = Object.entries(filmesMap)
-    .map(([titulo, data]) => ({
-      titulo,
-      avaliacoes: data.count,
-      media:
-        Math.round((data.notas.reduce((a, b) => a + b, 0) / data.notas.length) * 10) /
-        10,
-    }))
-    .sort((a, b) => b.avaliacoes - a.avaliacoes);
-
-  if (filmes.length === 0) {
-    console.log("(nenhum filme avaliado ainda)");
-  } else {
-    filmes.forEach((f, i) => {
-      console.log(`  ${i + 1}. "${f.titulo}" — ${f.avaliacoes} avaliação(ões), média ${f.media}`);
-    });
-  }
-
-  section("7. TESTE VIA REPOSITÓRIO (findUserByEmail)");
-  const admin = await repository.findUserByEmail("admin@cine.review");
+  section("6. TESTE DE LOGIN VIA REPOSITORIO");
+  const admin = await repository.findUserByLogin("admin");
   if (admin) {
-    console.log(`✓ Usuário admin encontrado: ${admin.nome} [${admin.id}]`);
-    const doAdmin = await repository.getReviewsByUserId(admin.id);
-    console.log(`  Avaliações do admin: ${doAdmin.length}`);
+    console.log(`Usuario admin encontrado: ${admin.nomeCompleto} [${admin.id_usuario}]`);
   } else {
-    console.log("— Usuário admin@cine.review não existe (seed não executado).");
+    console.log("Usuario admin nao encontrado.");
   }
 
   section("RESUMO");
-  console.log(`Banco: Back4App (Parse) — FUNCIONANDO`);
-  console.log(`Total: ${totalUsuarios} usuário(s), ${totalAvaliacoes} avaliação(ões), ${filmes.length} filme(s) distinto(s)`);
+  console.log("Banco: Back4App (Parse) - diagnostico concluido.");
 };
 
 run().catch((err) => {

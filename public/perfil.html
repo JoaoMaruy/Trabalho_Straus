@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Perfil - CineReview</title>
+    <title>Perfil - Block Films</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <header class="main-header">
       <div class="container header-inner">
-        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <a class="brand" href="index.html">Block Films</a>
         <nav class="nav-links">
           <a href="index.html">Catálogo</a>
           <a href="avaliacao.html">Avaliar</a>
@@ -200,7 +200,7 @@
                 (reviews.reduce((s, r) => s + Number(r.nota), 0) / reviews.length) * 10,
               ) / 10;
             document.getElementById("statAvg").textContent = avg.toFixed(1);
-            renderReviewCards(reviews, "myReviews");
+            renderReviewCards(reviews, "myReviews", { linkMovie: true, currentUserId: user.id_usuario });
           }
         } catch {
           document.getElementById("myReviewsEmpty").textContent =

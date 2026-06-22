@@ -3,6 +3,19 @@ require("dotenv").config();
 const fs = require("fs");
 const express = require("express");
 const session = require("express-session");
+let RedisStore;
+let redisClient;
+try {
+  if (process.env.REDIS_URL) {
+    const redis = require("redis");
+    const connectRedis = require("connect-redis");
+    RedisStore = connectRedis.RedisStore || connectRedis.default || connectRedis;
+    redisClient = redis.createClient({ url: process.env.REDIS_URL });
+    redisClient.connect().catch((err) => console.warn("Redis connect failed:", err));
+  }
+} catch (e) {
+  console.warn("Redis modules not available, falling back to file session store.", e.message);
+}
 const FileStore = require("session-file-store")(session);
 const cors = require("cors");
 const path = require("path");
@@ -26,16 +39,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
-    store: new FileStore({
-      path: sessionsPath,
-      ttl: SESSION_MAX_AGE / 1000,
-      retries: 1,
-    }),
+    store:
+      redisClient && RedisStore
+        ? new RedisStore({ client: redisClient })
+        : new FileStore({
+            path: sessionsPath,
+            ttl: SESSION_MAX_AGE / 1000,
+            retries: 1,
+          }),
     secret: process.env.SESSION_SECRET || "cine-review-secret",
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    name: "cinereview.sid",
+    name: "blockfilms.sid",
     cookie: {
       maxAge: SESSION_MAX_AGE,
       sameSite: "lax",
@@ -129,12 +145,11 @@ app.post("/api/registrar", async (req, res) => {
     if (await repository.cpfExists(cpf))
       return res.status(400).json({ error: "CPF já cadastrado." });
 
-    const hash = await repository.hashPassword(senha);
     await repository.createUser({
       nomeCompleto,
       nomeUsuario,
       email,
-      senha: hash,
+      senha,
       cpf,
     });
     res.json({ success: true });
@@ -144,6 +159,13 @@ app.post("/api/registrar", async (req, res) => {
   }
 });
 
+app.get("/api/debug", (req, res) => {
+  res.json({
+    authenticateUser: typeof repository.authenticateUser,
+    findUserByLogin: typeof repository.findUserByLogin,
+  });
+});
+
 app.post("/api/login", async (req, res) => {
   try {
     const { login, senha } = req.body;
@@ -151,18 +173,24 @@ app.post("/api/login", async (req, res) => {
     if (!identificador || !senha)
       return res.status(400).json({ error: "Usuário/e-mail e senha são obrigatórios." });
 
+    console.log(`[LOGIN] Tentando: ${identificador}`);
+
     const usuario = await repository.findUserByLogin(identificador);
+    console.log(`[LOGIN] Usuário encontrado:`, usuario ? `${usuario.nomeUsuario}` : "NÃO");
     if (!usuario)
       return res.status(400).json({ error: "Usuário ou senha inválidos." });
 
-    const valid = await repository.verifyPassword(senha, usuario.senha);
-    if (!valid)
+    console.log(`[LOGIN] Autenticando usuario: ${usuario.nomeUsuario}`);
+    const parseUser = await repository.authenticateUser(usuario.nomeUsuario, senha);
+    console.log(`[LOGIN] Parse result:`, parseUser ? `✓ ${parseUser.id}` : "✗ null");
+    if (!parseUser)
       return res.status(400).json({ error: "Usuário ou senha inválidos." });
 
     req.session.userId = usuario.id_usuario;
     req.session.userName = usuario.nomeCompleto;
     req.session.userEmail = usuario.email;
     await saveSession(req);
+    console.log(`[LOGIN] ✓ Sucesso para ${usuario.nomeUsuario}`);
     res.json({
       success: true,
       usuario: {
@@ -181,7 +209,7 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err)
       return res.status(500).json({ error: "Falha ao encerrar a sessão." });
-    res.clearCookie("cinereview.sid", { path: "/" });
+    res.clearCookie("blockfilms.sid", { path: "/" });
     res.json({ success: true });
   });
 });
@@ -255,17 +283,15 @@ app.put("/api/perfil/senha", requireAuth, async (req, res) => {
     if (!senhaAtual || !novaSenha)
       return res.status(400).json({ error: "Preencha as senhas." });
 
-    const usuario = await repository.findUserByLogin(
-      req.session.userEmail ||
-        (await repository.findUserById(req.session.userId))?.email,
-    );
+    const usuario =
+      (await repository.findUserById(req.session.userId)) ||
+      (await repository.findUserByLogin(req.session.userEmail));
     if (!usuario) return res.status(400).json({ error: "Usuário não encontrado." });
 
-    const valid = await repository.verifyPassword(senhaAtual, usuario.senha);
+    const valid = await repository.authenticateUser(usuario.nomeUsuario, senhaAtual);
     if (!valid) return res.status(400).json({ error: "Senha atual incorreta." });
 
-    const hash = await repository.hashPassword(novaSenha);
-    await repository.updateUserPassword(req.session.userId, hash);
+    await repository.updateUserPassword(req.session.userId, novaSenha);
     res.json({ success: true });
   } catch (error) {
     console.error("Erro ao alterar senha:", error);
@@ -295,7 +321,10 @@ app.post(
 
 app.get("/api/filmes", async (_req, res) => {
   try {
-    res.json(await repository.getMoviesList());
+    console.log("🎬 Chamando repository.getMoviesList()...");
+    const filmes = await repository.getMoviesList();
+    console.log(`✓ Retornou ${filmes.length} filmes`);
+    res.json(filmes);
   } catch (error) {
     console.error("Erro ao listar filmes:", error);
     res.status(500).json({ error: "Falha ao carregar filmes." });
@@ -361,6 +390,72 @@ app.post(
     } catch (error) {
       console.error("Erro ao salvar avaliação:", error);
       res.status(500).json({ error: "Falha ao enviar avaliação." });
+    }
+  },
+);
+
+// Deletar avaliação por id (usuário dono ou admin)
+app.delete("/api/avaliacao/:id", requireAuth, async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    // sanitize id: remove trailing suffixes like ':1' that may come from UI or selectors
+    const id = decodeURIComponent(String(rawId)).split(':')[0];
+    console.log(`DELETE /api/avaliacao request received for id='${rawId}' -> using '${id}'`);
+    const review = await repository.findReviewById(id);
+    if (!review) return res.status(404).json({ error: "Avaliação não encontrada." });
+
+    const isOwner = review.id_usuario === req.session.userId;
+    const isAdmin = (await repository.findUserById(req.session.userId))?.nomeUsuario === "admin";
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: "Sem permissão para apagar esta avaliação." });
+
+    const ok = await repository.deleteReview(id);
+    if (!ok) return res.status(500).json({ error: "Falha ao deletar avaliação." });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao deletar avaliação:", error);
+    res.status(500).json({ error: "Falha ao deletar avaliação." });
+  }
+});
+
+// Deletar todas as avaliações de um usuário (próprio perfil ou admin)
+app.delete("/api/usuario/:id/avaliacoes", requireAuth, async (req, res) => {
+  try {
+    const rawTargetId = req.params.id;
+    const targetId = decodeURIComponent(String(rawTargetId)).split(':')[0];
+    console.log(`DELETE /api/usuario/:id/avaliacoes request received for id='${rawTargetId}' -> using '${targetId}'`);
+    if (req.session.userId !== targetId) {
+      const isAdmin = (await repository.findUserById(req.session.userId))?.nomeUsuario === "admin";
+      if (!isAdmin) return res.status(403).json({ error: "Sem permissão." });
+    }
+
+    const removed = await repository.deleteReviewsByUserId(targetId);
+    res.json({ success: true, removed });
+  } catch (error) {
+    console.error("Erro ao deletar avaliações do usuário:", error);
+    res.status(500).json({ error: "Falha ao deletar avaliações do usuário." });
+  }
+});
+
+app.post(
+  "/api/filme/imagem",
+  requireAuth,
+  upload.single("imagem"),
+  handleUploadError,
+  async (req, res) => {
+    try {
+      const { nome } = req.body;
+      if (!nome || !nome.trim())
+        return res.status(400).json({ error: "Nome do filme obrigatório." });
+      if (!req.file) return res.status(400).json({ error: "Selecione uma imagem." });
+
+      const imagemUrl = await repository.uploadImage(req.file);
+      const updated = await repository.updateFilmeImage(nome.trim(), imagemUrl);
+      if (!updated) return res.status(404).json({ error: "Filme não encontrado." });
+
+      res.json({ success: true, imagem: updated.imagem });
+    } catch (error) {
+      console.error("Erro ao atualizar imagem do filme:", error);
+      res.status(500).json({ error: "Falha ao atualizar imagem do filme." });
     }
   },
 );

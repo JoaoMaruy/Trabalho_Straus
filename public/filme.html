@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Filme - CineReview</title>
+    <title>Filme - Block Films</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <header class="main-header">
       <div class="container header-inner">
-        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <a class="brand" href="index.html">Block Films</a>
         <nav class="nav-links">
           <a href="index.html">Catálogo</a>
           <a href="avaliacao.html">Avaliar</a>
@@ -28,7 +28,7 @@
     </main>
 
     <footer class="footer">
-      <div class="container">CineReview</div>
+      <div class="container">Block Films</div>
     </footer>
 
     <script src="js/main.js" defer></script>
@@ -44,9 +44,11 @@
 
         try {
           const data = await apiRequest(`/api/filme/${encodeURIComponent(nome)}`);
-          const { filme, avaliacoes } = data;
-          document.title = `${filme.nome} - CineReview`;
+            const { filme, avaliacoes } = data;
+            document.title = `${filme.nome} - Block Films`;
           document.getElementById("loading").style.display = "none";
+
+            const currentUser = await getCurrentUser();
 
           const pctPositive = avaliacoes.length
             ? Math.round(
@@ -56,10 +58,10 @@
 
           document.getElementById("movieDetail").innerHTML = `
             <section class="movie-hero">
-              <div class="movie-hero-poster">
-                <img src="${escapeHtml(filme.imagem)}" alt="${escapeHtml(filme.nome)}"
-                  onerror="this.src='${PLACEHOLDER_POSTER}'" />
-              </div>
+                  <div class="movie-hero-poster">
+                    <img id="movie-poster-img" src="${escapeHtml(filme.imagem)}" alt="${escapeHtml(filme.nome)}"
+                      onerror="this.src='${PLACEHOLDER_POSTER}'" />
+                  </div>
               <div class="movie-hero-info">
                 <h1>${escapeHtml(filme.nome)}</h1>
                 <p class="movie-meta">
@@ -85,6 +87,7 @@
                 </div>
                 <p class="movie-synopsis">${escapeHtml(filme.sinopse)}</p>
                 <a href="avaliacao.html?nome=${encodeURIComponent(filme.nome)}" class="btn-primary">Avaliar este filme</a>
+                <div id="change-cover-area" style="margin-top:12px"></div>
               </div>
             </section>
 
@@ -99,7 +102,48 @@
             </section>
           `;
           document.getElementById("movieDetail").style.display = "block";
-          renderReviewList(avaliacoes, "reviewsList");
+          renderReviewList(avaliacoes, "reviewsList", currentUser?.id_usuario || null);
+
+          // Mostrar formulário de alteração de capa para usuários autenticados
+          try {
+            const current = await getCurrentUser();
+            if (current) {
+              const changeArea = document.getElementById("change-cover-area");
+              changeArea.innerHTML = `
+                <form id="changeCoverForm" class="small-form" enctype="multipart/form-data">
+                  <label>Alterar capa:</label>
+                  <input type="file" name="imagem" accept="image/*" />
+                  <input type="hidden" name="nome" value="${escapeHtml(filme.nome)}" />
+                  <button class="btn-secondary" type="submit">Enviar nova capa</button>
+                  <span id="changeCoverMsg" class="form-message"></span>
+                </form>
+              `;
+
+              document.getElementById("changeCoverForm").addEventListener("submit", async (ev) => {
+                ev.preventDefault();
+                const msg = document.getElementById("changeCoverMsg");
+                msg.textContent = "Enviando...";
+                const form = ev.currentTarget;
+                const fd = new FormData(form);
+                try {
+                  const res = await fetch(`${API_BASE_URL}/api/filme/imagem`, {
+                    method: "POST",
+                    credentials: "include",
+                    body: fd,
+                  });
+                  const data = await res.json().catch(() => null);
+                  if (!res.ok) throw new Error(data?.error || "Falha ao atualizar capa.");
+                  document.getElementById("movie-poster-img").src = data.imagem || '${PLACEHOLDER_POSTER}';
+                  msg.textContent = "Capa atualizada com sucesso.";
+                } catch (err) {
+                  console.error(err);
+                  msg.textContent = err.message || "Erro ao atualizar capa.";
+                }
+              });
+            }
+          } catch (e) {
+            // sem ação quando não autenticado
+          }
         } catch {
           document.getElementById("loading").style.display = "none";
           document.getElementById("notFound").style.display = "block";

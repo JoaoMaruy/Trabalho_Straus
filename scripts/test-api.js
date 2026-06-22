@@ -2,7 +2,11 @@ require("dotenv").config();
 const BASE = "http://localhost:3000";
 
 const run = async () => {
-  console.log("=== Filmes ===");
+  console.log("=== Health ===");
+  const health = await fetch(`${BASE}/api/health`).then((r) => r.json());
+  console.log("Health:", health.status || JSON.stringify(health));
+
+  console.log("\n=== Filmes ===");
   const filmes = await fetch(`${BASE}/api/filmes`).then((r) => r.json());
   console.log(`${filmes.length} filmes no catálogo`);
 
@@ -10,35 +14,25 @@ const run = async () => {
   const detail = await fetch(
     `${BASE}/api/filme/${encodeURIComponent("Pulp Fiction")}`,
   ).then((r) => r.json());
-  console.log(`${detail.filme.titulo}: média ${detail.filme.media}, ${detail.avaliacoes.length} críticas`);
+  console.log(`${detail.filme.nome}: média ${detail.filme.media}, ${detail.avaliacoes.length} críticas`);
 
-  console.log("\n=== Login + sessão ===");
+  console.log("\n=== Login (teste admin) ===");
   const loginRes = await fetch(`${BASE}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "marina@email.com", senha: "senha123" }),
+    body: JSON.stringify({ login: "admin", senha: "123" }),
   });
-  const cookies = loginRes.headers.getSetCookie?.() || [];
-  const cookie = cookies.join("; ");
-  console.log("Login:", loginRes.status);
+  const loginJson = await loginRes.json().catch(() => null);
+  console.log("Login status:", loginRes.status, "response:", loginJson);
 
-  const sessao = await fetch(`${BASE}/api/sessao`, {
-    headers: { Cookie: cookie },
-  }).then((r) => r.json());
-  console.log("Sessão:", sessao);
+  if (loginJson && loginJson.usuario && loginJson.usuario.id_usuario) {
+    const userId = loginJson.usuario.id_usuario;
+    console.log("\n=== Perfil público ===");
+    const publico = await fetch(`${BASE}/api/usuario/${userId}`).then((r) => r.json());
+    console.log(`${publico.nomeCompleto || publico.nome}: média ${publico.mediaNotas || 0}, ${publico.avaliacoes?.length || 0} reviews`);
+  }
 
-  const user = await fetch(`${BASE}/api/usuario`, {
-    headers: { Cookie: cookie },
-  }).then((r) => r.json());
-  console.log("Usuário:", user.usuario?.nome, `(${user.usuario?.totalAvaliacoes} avaliações)`);
-
-  console.log("\n=== Perfil público ===");
-  const publico = await fetch(`${BASE}/api/usuario/${user.usuario.id}`).then((r) =>
-    r.json(),
-  );
-  console.log(`${publico.nome}: média ${publico.mediaNotas}, ${publico.avaliacoes.length} reviews`);
-
-  console.log("\n✓ Todos os testes passaram!");
+  console.log("\n✓ Testes básicos executados (verifique logs acima).");
 };
 
 run().catch((e) => {

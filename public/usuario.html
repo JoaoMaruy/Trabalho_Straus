@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Usuário - CineReview</title>
+    <title>Usuário - Block Films</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <header class="main-header">
       <div class="container header-inner">
-        <a class="brand" href="index.html">Cine<span>Review</span></a>
+        <a class="brand" href="index.html">Block Films</a>
         <nav class="nav-links">
           <a href="index.html">Catálogo</a>
           <a href="avaliacao.html">Avaliar</a>
@@ -40,7 +40,7 @@
 
         try {
           const perfil = await apiRequest(`/api/usuario/${encodeURIComponent(id)}`);
-          document.title = `${perfil.nomeCompleto} - CineReview`;
+          document.title = `${perfil.nomeCompleto} - Block Films`;
           document.getElementById("loading").style.display = "none";
 
           const avatar = perfil.foto_perfil || PLACEHOLDER_AVATAR;

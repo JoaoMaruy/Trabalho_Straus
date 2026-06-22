@@ -123,7 +123,7 @@ const renderNav = (user) => {
   }
 };
 
-const renderReviewCards = (reviews, targetId, { linkMovie = true } = {}) => {
+const renderReviewCards = (reviews, targetId, { linkMovie = true, currentUserId = null } = {}) => {
   const container = document.getElementById(targetId);
   if (!container) return;
 
@@ -156,11 +156,35 @@ const renderReviewCards = (reviews, targetId, { linkMovie = true } = {}) => {
           <p class="movie-comment">${escapeHtml(review.comentario)}</p>
           <p class="movie-author">Avaliado por ${authorLink}</p>
           <a href="${movieUrl(nomeFilme)}" class="btn-link">Ver detalhes do filme →</a>
+          ${currentUserId && review.id_usuario === currentUserId ? `<button class="btn-link btn-delete-review" data-review-id="${escapeHtml(review.id_avaliacao)}">Apagar</button>` : ''}
         </div>
       </article>
     `;
     })
     .join("");
+
+  // attach delete handlers for cards
+  container.querySelectorAll('.btn-delete-review').forEach((btn) => {
+    btn.addEventListener('click', async (ev) => {
+      const id = ev.currentTarget.dataset.reviewId;
+      if (!confirm('Confirmar exclusão desta avaliação?')) return;
+      try {
+        await apiRequest(`/api/avaliacao/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        // remove nearest review element safely
+        const article = ev.currentTarget.closest('[data-review-id]');
+        if (article) article.remove();
+        else {
+          // fallback: search all elements and match dataset value exactly
+          const items = document.querySelectorAll('[data-review-id]');
+          for (const it of items) {
+            if (it.dataset.reviewId === id) { it.remove(); break; }
+          }
+        }
+      } catch (err) {
+        alert(err.message || 'Falha ao apagar avaliação.');
+      }
+    });
+  });
 };
 
 const renderMovieGrid = (filmes, targetId) => {
@@ -205,7 +229,7 @@ const renderScoreBars = (distribuicao, total) => {
     .join("");
 };
 
-const renderReviewList = (reviews, targetId) => {
+const renderReviewList = (reviews, targetId, currentUserId = null) => {
   const container = document.getElementById(targetId);
   if (!container) return;
 
@@ -226,8 +250,13 @@ const renderReviewList = (reviews, targetId) => {
             <div><strong>${escapeHtml(review.nomeCompleto || "Anônimo")}</strong></div>
           </div>`;
 
+      const canDelete = currentUserId && review.id_usuario === currentUserId;
+      const deleteBtn = canDelete
+        ? `<button class="btn-link btn-delete-review" data-review-id="${escapeHtml(review.id_avaliacao)}">Apagar</button>`
+        : "";
+
       return `
-      <article class="review-item">
+      <article class="review-item" data-review-id="${escapeHtml(review.id_avaliacao)}">
         <div class="review-item-header">
           ${authorLink}
           <div class="review-score ${ratingColor(rating)}">
@@ -236,10 +265,33 @@ const renderReviewList = (reviews, targetId) => {
           </div>
         </div>
         <p class="review-item-text">${escapeHtml(review.comentario)}</p>
+        ${deleteBtn}
       </article>
     `;
     })
     .join("");
+
+  // Attach delete handlers
+  container.querySelectorAll('.btn-delete-review').forEach((btn) => {
+    btn.addEventListener('click', async (ev) => {
+      const id = ev.currentTarget.dataset.reviewId;
+      if (!confirm('Confirmar exclusão desta avaliação?')) return;
+      try {
+        await apiRequest(`/api/avaliacao/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        // remove nearest review element safely
+        const article = ev.currentTarget.closest('[data-review-id]');
+        if (article) article.remove();
+        else {
+          const items = document.querySelectorAll('[data-review-id]');
+          for (const it of items) {
+            if (it.dataset.reviewId === id) { it.remove(); break; }
+          }
+        }
+      } catch (err) {
+        alert(err.message || 'Falha ao apagar avaliação.');
+      }
+    });
+  });
 };
 
 const showMessage = (container, message, type = "info") => {
